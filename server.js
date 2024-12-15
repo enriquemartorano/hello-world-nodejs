@@ -9,7 +9,7 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // Parse the connection string from the environment variable (Azure MySQL In App)
-const mysqlConnStr = process.env.MYSQLCONNSTR_localdb || 'Server=127.0.0.1;Database=localdb;Uid=azure;Pwd=6#vWHD_$;';
+const mysqlConnStr = process.env.MYSQLCONNSTR_localdb || 'Server=127.0.0.1;Database=localdb;Uid=azure;Pwd=6#vWHD_$';
 
 // Function to parse the connection string to extract host, user, password, and database
 function parseConnectionString(connStr) {
@@ -31,8 +31,9 @@ const pool = mysql.createPool({
   connectionLimit: 10,
   host: dbConfig.server || '127.0.0.1',
   user: dbConfig.uid || 'azure',
-  password: dbConfig.pwd || '',
+  password: dbConfig.pwd || '6#vWHD_$',
   database: dbConfig.database || 'employees_db',
+  port: dbConfig.PORT || 51830,
   multipleStatements: true
 });
 
