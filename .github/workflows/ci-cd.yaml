@@ -40,21 +40,21 @@ jobs:
       run: |
         docker push enriquemartorano/node3:latest
 
-deploy:
-  runs-on: ubuntu-latest
-  needs: build
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
 
-  steps:
-  - name: Checkout code
-    uses: actions/checkout@v4
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-  - name: Azure Login
-    uses: azure/login@v2
-    with:
-      creds: ${{ secrets.AZURE_CREDENTIALS }}
+    - name: Azure Login
+      uses: azure/login@v2
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-  - name: Deploy to Azure Web App
-    uses: azure/webapps-deploy@v3
-    with:
-      app-name: 'node3'
-      package: .
+    - name: Deploy to Azure Web App
+      uses: azure/webapps-deploy@v3
+      with:
+        app-name: 'node3'
+        package: .
