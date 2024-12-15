@@ -1,4 +1,4 @@
-name: Build and Deploy to Azure
+name: CI/CD: Build and Deploy to Azure
 
 on:
   push:
@@ -11,7 +11,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
@@ -20,13 +21,13 @@ jobs:
 
       - name: Install dependencies
         run: |
-          npm install
+          npm ci
 
-      - name: Run tests (optional)
+      - name: Run tests
         run: |
           npm test
       
-      - name: Upload artifact for deployment
+      - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
           name: node-app
@@ -37,7 +38,7 @@ jobs:
     needs: build
 
     steps:
-      - name: Download artifact
+      - name: Download build artifact
         uses: actions/download-artifact@v4
         with:
           name: node-app
