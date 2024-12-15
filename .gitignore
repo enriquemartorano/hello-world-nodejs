@@ -6,6 +6,7 @@ npm-debug.log*
 # Node modules
 node_modules/
 nodeapp33.zip
+main_node3.yml
 
 # Environment variables
 .env
