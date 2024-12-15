@@ -71,8 +71,8 @@ pool.getConnection((err, connection) => {
 // Route to display a simple welcome message
 app.get('/', (req, res) => {
   res.send(`
-    <h1>Welcome to Employee Management</h1>
-    <p>This is a Node.js app with MySQL In App on Azure.</p>
+    <h1>Welcome to the MySQL In-App Example - Version 2.1</h1>
+    <p>This is a Node.js app using MySQL In-App on Azure. It was updated locally!</p>
     <ul>
       <li><a href="/employees">View All Employees</a></li>
     </ul>
@@ -105,6 +105,7 @@ app.get('/employees/:id', (req, res) => {
 });
 
 // Route to create a new employee
+/*
 app.post('/employees', (req, res) => {
   const { name, position, salary } = req.body;
   if (!name || !position || !salary) {
@@ -119,6 +120,22 @@ app.post('/employees', (req, res) => {
     res.json({ message: 'Employee created successfully', employeeId: result.insertId });
   });
 });
+*/
+app.get('/employees', (req, res) => {
+  try {
+    const query = 'SELECT * FROM employees';
+    pool.query(query, (err, results) => {
+      if (err) {
+        throw new Error(`Error fetching employees: ${err.message}`);
+      }
+      res.json(results);
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 
 // Route to update an employee's information
 app.put('/employees/:id', (req, res) => {
