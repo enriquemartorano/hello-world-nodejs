@@ -1,20 +1,20 @@
-# Use the official Node.js image with version 20 and Alpine for a lightweight base
+# Use the official Node.js image
 FROM node:20-alpine
 
-# Set the working directory inside the container
+# Set the working directory
 WORKDIR /app
 
-# Copy the package.json and package-lock.json (if it exists)
+# Copy package.json and package-lock.json
 COPY package*.json ./
 
-# Install all dependencies
+# Install dependencies
 RUN npm install
 
-# Copy the rest of the app source code
+# Copy the application files
 COPY . .
 
-# Expose port 3000 for the container
+# Expose the port the app runs on
 EXPOSE 3000
 
-# Start the app using nodemon for hot-reloading
-CMD ["npx", "nodemon", "server.js"]
+# Start the app
+CMD ["npx", "server.js"]
