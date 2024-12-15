@@ -1,52 +1,152 @@
-// Load the http module to create an HTTP server
-const http = require('http');
-const url = require('url');
+// Import required modules
+const express = require('express');
+const mysql = require('mysql');
 
-// Use the PORT from the environment (required for Azure)
+// Create the Express app
+const app = express();
+
+// Set the port from the environment variable or default to 3000
 const port = process.env.PORT || 3000;
 
-// Sample quotes for the /quote endpoint
-const quotes = [
-  "The only limit to our realization of tomorrow is our doubts of today. - Franklin D. Roosevelt",
-  "Do not watch the clock. Do what it does. Keep going. - Sam Levenson",
-  "Success is not final, failure is not fatal: It is the courage to continue that counts. - Winston Churchill",
-  "Hardships often prepare ordinary people for an extraordinary destiny. - C.S. Lewis"
-];
+// Parse the connection string from the environment variable (Azure MySQL In App)
+const mysqlConnStr = process.env.MYSQLCONNSTR_localdb || 'Server=127.0.0.1;Database=localdb;Uid=azure;Pwd=6#vWHD_$;';
 
-// Create an HTTP server
-const server = http.createServer((req, res) => {
-  const parsedUrl = url.parse(req.url, true);
-  const path = parsedUrl.pathname;
-  const query = parsedUrl.query;
-
-  res.setHeader('Content-Type', 'application/json');
-
-  if (path === '/') {
-    res.statusCode = 200;
-    res.end(JSON.stringify({ message: 'Welcome to our API!' }));
-  } else if (path === '/quote') {
-    const randomIndex = Math.floor(Math.random() * quotes.length);
-    const randomQuote = quotes[randomIndex];
-    res.statusCode = 200;
-    res.end(JSON.stringify({ quote: randomQuote }));
-  } else if (path === '/math/add') {
-    const x = parseFloat(query.x);
-    const y = parseFloat(query.y);
-
-    if (isNaN(x) || isNaN(y)) {
-      res.statusCode = 400;
-      res.end(JSON.stringify({ error: 'Invalid query parameters. Please provide x and y as numbers.' }));
-    } else {
-      const sum = x + y;
-      res.statusCode = 200;
-      res.end(JSON.stringify({ x, y, sum }));
+// Function to parse the connection string to extract host, user, password, and database
+function parseConnectionString(connStr) {
+  const config = {};
+  const pairs = connStr.split(';');
+  pairs.forEach(pair => {
+    const [key, value] = pair.split('=');
+    if (key && value) {
+      config[key.toLowerCase().trim()] = value.trim();
     }
-  } else {
-    res.statusCode = 404;
-    res.end(JSON.stringify({ error: 'Route not found' }));
-  }
+  });
+  return config;
+}
+
+const dbConfig = parseConnectionString(mysqlConnStr);
+
+// Create a MySQL connection pool
+const pool = mysql.createPool({
+  connectionLimit: 10,
+  host: dbConfig.server || '127.0.0.1',
+  user: dbConfig.uid || 'azure',
+  password: dbConfig.pwd || '',
+  database: dbConfig.database || 'employees_db',
+  multipleStatements: true
 });
 
-server.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}/`);
+// Middleware to parse JSON request body
+app.use(express.json());
+
+// Create database and table on server start
+pool.getConnection((err, connection) => {
+  if (err) {
+    console.error('Error connecting to MySQL:', err.message);
+    return;
+  }
+
+  const createDBQuery = `
+    CREATE DATABASE IF NOT EXISTS employees_db;
+    USE employees_db;
+    CREATE TABLE IF NOT EXISTS employees (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      name VARCHAR(100) NOT NULL,
+      position VARCHAR(100) NOT NULL,
+      salary DECIMAL(10, 2) NOT NULL
+    );
+  `;
+
+  connection.query(createDBQuery, (err, result) => {
+    connection.release();
+    if (err) {
+      console.error('Error creating database or table:', err.message);
+    } else {
+      console.log('Database and table created successfully');
+    }
+  });
+});
+
+// Route to display a simple welcome message
+app.get('/', (req, res) => {
+  res.send(`
+    <h1>Welcome to Employee Management</h1>
+    <p>This is a Node.js app with MySQL In App on Azure.</p>
+    <ul>
+      <li><a href="/employees">View All Employees</a></li>
+    </ul>
+  `);
+});
+
+// Route to fetch all employees
+app.get('/employees', (req, res) => {
+  const query = 'SELECT * FROM employees';
+  pool.query(query, (err, results) => {
+    if (err) {
+      console.error('Error fetching employees:', err.message);
+      return res.status(500).json({ error: 'Internal Server Error' });
+    }
+    res.json(results);
+  });
+});
+
+// Route to get an employee by ID
+app.get('/employees/:id', (req, res) => {
+  const { id } = req.params;
+  const query = 'SELECT * FROM employees WHERE id = ?';
+  pool.query(query, [id], (err, results) => {
+    if (err) {
+      console.error('Error fetching employee:', err.message);
+      return res.status(500).json({ error: 'Internal Server Error' });
+    }
+    res.json(results[0] || {});
+  });
+});
+
+// Route to create a new employee
+app.post('/employees', (req, res) => {
+  const { name, position, salary } = req.body;
+  if (!name || !position || !salary) {
+    return res.status(400).json({ error: 'Name, position, and salary are required' });
+  }
+  const query = 'INSERT INTO employees (name, position, salary) VALUES (?, ?, ?)';
+  pool.query(query, [name, position, salary], (err, result) => {
+    if (err) {
+      console.error('Error inserting employee:', err.message);
+      return res.status(500).json({ error: 'Internal Server Error' });
+    }
+    res.json({ message: 'Employee created successfully', employeeId: result.insertId });
+  });
+});
+
+// Route to update an employee's information
+app.put('/employees/:id', (req, res) => {
+  const { id } = req.params;
+  const { name, position, salary } = req.body;
+  const query = 'UPDATE employees SET name = ?, position = ?, salary = ? WHERE id = ?';
+  pool.query(query, [name, position, salary, id], (err, result) => {
+    if (err) {
+      console.error('Error updating employee:', err.message);
+      return res.status(500).json({ error: 'Internal Server Error' });
+    }
+    res.json({ message: 'Employee updated successfully' });
+  });
+});
+
+// Route to delete an employee by ID
+app.delete('/employees/:id', (req, res) => {
+  const { id } = req.params;
+  const query = 'DELETE FROM employees WHERE id = ?';
+  pool.query(query, [id], (err, result) => {
+    if (err) {
+      console.error('Error deleting employee:', err.message);
+      return res.status(500).json({ error: 'Internal Server Error' });
+    }
+    res.json({ message: 'Employee deleted successfully' });
+  });
+});
+
+// Start the Express server
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
 });
