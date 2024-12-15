@@ -5,6 +5,8 @@ const mysql = require('mysql');
 // Create the Express app
 const app = express();
 
+module.exports = app;
+
 // Set the port from the environment variable or default to 3000
 const port = process.env.PORT || 3000;
 
@@ -71,7 +73,7 @@ pool.getConnection((err, connection) => {
 // Route to display a simple welcome message
 app.get('/', (req, res) => {
   res.send(`
-    <h1> Welcome to the updated app with CI/CD 1</h1>
+    <h1> Welcome to the updated app with CI/CD 2</h1>
     <p>This is a Node.js app using MySQL In-App on Azure. It was updated locally!</p>
     <ul>
       <li><a href="/employees">View All Employees</a></li>
