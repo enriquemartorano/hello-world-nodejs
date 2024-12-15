@@ -71,7 +71,7 @@ pool.getConnection((err, connection) => {
 // Route to display a simple welcome message
 app.get('/', (req, res) => {
   res.send(`
-    <h1>Welcome to the MySQL In-App Example - Version 7</h1>
+    <h1>Welcome to the MySQL In-App Example - Version 8</h1>
     <p>This is a Node.js app using MySQL In-App on Azure. It was updated locally!</p>
     <ul>
       <li><a href="/employees">View All Employees</a></li>
